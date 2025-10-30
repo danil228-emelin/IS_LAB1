@@ -1,70 +1,61 @@
-from functools import wraps
-from flask import jsonify, request
-from models import User
-import jwt
-from config import Config
+import html
+import re
+from markdown import markdown
+from bleach import clean
 
-def token_required(f):
-    @wraps(f)
-    def decorated(*args, **kwargs):
-        token = None
-        
-        # Проверяем заголовок Authorization
-        if 'Authorization' in request.headers:
-            auth_header = request.headers['Authorization']
-            try:
-                token = auth_header.split(' ')[1]  # Bearer <token>
-            except IndexError:
-                return jsonify({
-                    'success': False,
-                    'message': 'Invalid token format'
-                }), 401
-        
-        if not token:
-            return jsonify({
-                'success': False,
-                'message': 'Token is missing'
-            }), 401
-        
-        try:
-            # Декодируем токен
-            data = jwt.decode(token, Config.SECRET_KEY, algorithms=['HS256'])
-            current_user = User.query.get(data['identity'])
-            
-            if not current_user:
-                return jsonify({
-                    'success': False,
-                    'message': 'Invalid token'
-                }), 401
-                
-        except jwt.ExpiredSignatureError:
-            return jsonify({
-                'success': False,
-                'message': 'Token has expired'
-            }), 401
-        except jwt.InvalidTokenError:
-            return jsonify({
-                'success': False,
-                'message': 'Invalid token'
-            }), 401
-        except Exception as e:
-            return jsonify({
-                'success': False,
-                'message': f'Token error: {str(e)}'
-            }), 401
-        
-        return f(current_user, *args, **kwargs)
+def sanitize_html(text):
+    """
+    Санитизация HTML для предотвращения XSS
+    """
+    if not text:
+        return text
     
-    return decorated
+    # Базовое экранирование HTML
+    sanitized = html.escape(text)
+    
+    return sanitized
 
-def admin_required(f):
-    @wraps(f)
-    def decorated(current_user, *args, **kwargs):
-        # Простая проверка на админа (можно расширить)
-        if current_user.username != 'admin':
-            return jsonify({
-                'success': False,
-                'message': 'Admin access required'
-            }), 403
-        return f(current_user, *args, **kwargs)
-    return decorated
+def sanitize_user_input(input_data):
+    """
+    Санитизация пользовательского ввода
+    """
+    if isinstance(input_data, str):
+        # Удаляем потенциально опасные символы
+        sanitized = re.sub(r'[<>"\'&]', '', input_data)
+        # Ограничиваем длину
+        return sanitized[:1000]
+    elif isinstance(input_data, dict):
+        return {key: sanitize_user_input(value) for key, value in input_data.items()}
+    elif isinstance(input_data, list):
+        return [sanitize_user_input(item) for item in input_data]
+    else:
+        return input_data
+
+def safe_markdown_to_html(markdown_text):
+    """
+    Безопасное преобразование Markdown в HTML
+    """
+    if not markdown_text:
+        return ""
+    
+    # Разрешаем только безопасные теги
+    allowed_tags = [
+        'p', 'br', 'strong', 'em', 'ul', 'ol', 'li', 
+        'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'blockquote'
+    ]
+    
+    allowed_attributes = {
+        '*': ['class'],
+        'a': ['href', 'title'],
+        'img': ['src', 'alt', 'title']
+    }
+    
+    html_content = markdown(markdown_text)
+    safe_html = clean(
+        html_content,
+        tags=allowed_tags,
+        attributes=allowed_attributes,
+        strip=True
+    )
+    
+    return safe_html
