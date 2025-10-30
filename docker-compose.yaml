@@ -1,0 +1,21 @@
+version: '3.8'
+
+services:
+  flask-auth-app:
+    build: .
+    ports:
+      - "5000:5000"
+    environment:
+      - FLASK_ENV=production
+      - SECRET_KEY=DB_LAB_1
+      - DATABASE_URL=sqlite:////app/data/app.db
+    volumes:
+      - db_data:/app/data
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+volumes:
+  db_data:
