@@ -40,6 +40,7 @@ class User(db.Model):
     posts = db.relationship('Post', backref='author', lazy=True, cascade='all, delete-orphan')
     
     def set_password(self, password):
+         # Хэширование пароля с помощью bcrypt
         self.password_hash = bcrypt.generate_password_hash(password).decode('utf-8')
     
     def check_password(self, password):
@@ -78,15 +79,6 @@ class Post(db.Model):
         }
 
 # Маршруты
-
-@app.route('/health', methods=['GET'])
-def health_check():
-    return jsonify({
-        'status': 'healthy',
-        'message': 'Auth API is running',
-        'timestamp': datetime.utcnow().isoformat(),
-        'database': 'SQLite'
-    }), 200
 
 # 1. POST /auth/login
 @app.route('/auth/login', methods=['POST'])
@@ -255,126 +247,6 @@ def create_post():
         return jsonify({
             'success': False,
             'message': f'Error creating post: {str(e)}'
-        }), 500
-
-# Дополнительные маршруты
-@app.route('/auth/register', methods=['POST'])
-def register():
-    try:
-        data = request.get_json()
-        
-        if not data:
-            return jsonify({
-                'success': False,
-                'message': 'No JSON data provided'
-            }), 400
-        
-        username = data.get('username')
-        email = data.get('email')
-        password = data.get('password')
-        
-        if not all([username, email, password]):
-            return jsonify({
-                'success': False,
-                'message': 'Username, email and password are required'
-            }), 400
-        
-        if len(password) < 6:
-            return jsonify({
-                'success': False,
-                'message': 'Password must be at least 6 characters long'
-            }), 400
-        
-        if User.query.filter_by(username=username).first():
-            return jsonify({
-                'success': False,
-                'message': 'Username already exists'
-            }), 409
-        
-        if User.query.filter_by(email=email).first():
-            return jsonify({
-                'success': False,
-                'message': 'Email already exists'
-            }), 409
-        
-        user = User(username=username, email=email)
-        user.set_password(password)
-        
-        db.session.add(user)
-        db.session.commit()
-        
-        access_token = create_access_token(
-            identity=user.id,
-            additional_claims={'username': user.username}
-        )
-        
-        logger.info(f"User registered: {username}")
-        
-        return jsonify({
-            'success': True,
-            'message': 'User registered successfully',
-            'data': {
-                'access_token': access_token,
-                'token_type': 'bearer',
-                'user': user.to_dict()
-            }
-        }), 201
-        
-    except Exception as e:
-        db.session.rollback()
-        logger.error(f"Registration error: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'Registration error: {str(e)}'
-        }), 500
-
-@app.route('/api/posts', methods=['GET'])
-@jwt_required()
-def get_posts():
-    try:
-        posts = Post.query.filter_by(is_published=True)\
-                        .order_by(Post.created_at.desc())\
-                        .all()
-        
-        return jsonify({
-            'success': True,
-            'message': 'Posts retrieved successfully',
-            'data': {
-                'posts': [post.to_dict() for post in posts]
-            }
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error retrieving posts: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'Error retrieving posts: {str(e)}'
-        }), 500
-
-@app.route('/api/users/me', methods=['GET'])
-@jwt_required()
-def get_current_user():
-    try:
-        current_user_id = get_jwt_identity()
-        user = User.query.get(current_user_id)
-        
-        if not user:
-            return jsonify({
-                'success': False,
-                'message': 'User not found'
-            }), 404
-        
-        return jsonify({
-            'success': True,
-            'message': 'User data retrieved successfully',
-            'data': user.to_dict()
-        }), 200
-        
-    except Exception as e:
-        logger.error(f"Error retrieving user data: {str(e)}")
-        return jsonify({
-            'success': False,
-            'message': f'Error retrieving user data: {str(e)}'
         }), 500
 
 # JWT обработчики ошибок
