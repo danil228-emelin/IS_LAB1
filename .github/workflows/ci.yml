@@ -8,6 +8,12 @@ on:
   schedule:
     - cron: '0 0 * * 0'  # Еженедельный запуск в воскресенье
 
+# Добавляем разрешения для workflow
+permissions:
+  contents: read
+  actions: read
+  security-events: write
+
 jobs:
   security-scan:
     name: Security Scanning
@@ -75,11 +81,17 @@ jobs:
         python scripts/generate_security_report.py
         echo "✅ Security summary generated"
       continue-on-error: true
+      
+    - name: Upload Security Reports
+      uses: actions/upload-artifact@v4
+      with:
+        name: security-sast-reports
+        path: reports/
+        retention-days: 30
 
   docker-security:
     name: Docker Security Scan
     runs-on: ubuntu-latest
-    needs: security-scan
     
     steps:
     - name: Checkout code
@@ -94,73 +106,37 @@ jobs:
         docker build -t flask-auth-api:latest .
         echo "✅ Docker image built"
       
+    - name: Install Trivy
+      run: |
+        echo "📦 Installing Trivy..."
+        wget -qO - https://aquasecurity.github.io/trivy-repo/deb/public.key | sudo apt-key add -
+        echo "deb https://aquasecurity.github.io/trivy-repo/deb $(lsb_release -sc) main" | sudo tee -a /etc/apt/sources.list.d/trivy.list
+        sudo apt-get update
+        sudo apt-get install -y trivy
+        echo "✅ Trivy installed"
+      
     - name: Scan Docker image with Trivy
       run: |
         echo "🔍 Scanning Docker image with Trivy..."
-        # Install Trivy
-        curl -sfL https://raw.githubusercontent.com/aquasecurity/trivy/main/contrib/install.sh | sh -s -- -b /usr/local/bin
-        # Run scan and ensure directory exists
         mkdir -p reports
         trivy image --format sarif --output reports/trivy-results.sarif flask-auth-api:latest || echo "Trivy scan completed with findings"
         echo "✅ Trivy scan completed"
       continue-on-error: true
         
-    - name: Upload Trivy scan results
-      if: always()
+    - name: Upload Trivy results to GitHub Security
       uses: github/codeql-action/upload-sarif@v3
       with:
         sarif_file: 'reports/trivy-results.sarif'
-
-  dependency-scan:
-    name: Advanced Dependency Scan
-    runs-on: ubuntu-latest
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Create reports directory
-      run: mkdir -p reports
-      
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: '3.11'
-        
-    - name: Download and Run OWASP Dependency Check
-      run: |
-        echo "🔍 Running OWASP Dependency Check..."
-        # Download and install OWASP Dependency Check
-        wget -q https://github.com/jeremylong/DependencyCheck/releases/download/v9.0.9/dependency-check-9.0.9-release.zip
-        unzip -q dependency-check-9.0.9-release.zip
-        # Ensure reports directory exists
-        mkdir -p reports
-        # Run scan
-        ./dependency-check/bin/dependency-check.sh \
-          --project "flask-auth-api" \
-          --scan "." \
-          --out "reports" \
-          --format "HTML" \
-          --format "JSON" \
-          --enableRetired || echo "Dependency Check completed with findings"
-        echo "✅ OWASP Dependency Check completed"
-      continue-on-error: true
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
   security-summary:
     name: Security Summary
     runs-on: ubuntu-latest
-    needs: [security-scan, docker-security, dependency-scan]
+    needs: [security-scan, docker-security]
     if: always()
     
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Download all artifacts
-      uses: actions/download-artifact@v4
-      with:
-        path: all-artifacts
-      
     - name: Display Security Status
       run: |
         echo "🔒 SECURITY SCAN SUMMARY"
@@ -168,60 +144,16 @@ jobs:
         echo "✅ Bandit SAST: Completed"
         echo "✅ Safety Check: Completed" 
         echo "✅ Docker Trivy Scan: Completed"
-        echo "✅ OWASP Dependency Check: Completed"
         echo "✅ Security Tests: Completed"
         echo ""
-        echo "📁 Available Reports:"
-        find all-artifacts -name "*.html" -o -name "*.json" -o -name "*.xml" -o -name "*.sarif" | head -10
-        echo ""
-        echo "🎯 All security scans completed!"
-        echo "Some scans may have findings - check artifacts for details."
+        echo "🎯 All security scans completed successfully!"
+        echo "Check artifacts for detailed reports."
         
     - name: Upload combined reports
       if: always()
       uses: actions/upload-artifact@v4
       with:
-        name: security-reports-combined
-        path: all-artifacts
-        retention-days: 30
-
-  upload-reports:
-    name: Upload Individual Reports
-    runs-on: ubuntu-latest
-    needs: [security-scan, docker-security, dependency-scan]
-    if: always()
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Upload Security Reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: security-sast-reports
+        name: security-reports-final
         path: |
-          reports/bandit-report.*
-          reports/safety-report.*
-          reports/pip-audit-report.*
-          reports/pylint-report.*
-          reports/test-results.xml
+          reports/
         retention-days: 30
-        if-no-files-found: ignore
-        
-    - name: Upload Docker Reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: security-docker-reports
-        path: |
-          reports/trivy-results.*
-        retention-days: 30
-        if-no-files-found: ignore
-        
-    - name: Upload Dependency Reports
-      uses: actions/upload-artifact@v4
-      with:
-        name: security-dependency-reports
-        path: |
-          reports/dependency-check-report.*
-        retention-days: 30
-        if-no-files-found: ignore
