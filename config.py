@@ -6,16 +6,10 @@ load_dotenv()
 
 class Config:
     # Основные настройки
-    SECRET_KEY = os.environ.get('SECRET_KEY') or 'your-secret-key-here'
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'dev-secret-key-change-in-production')
     
-    # PostgreSQL настройки
-    DB_HOST = os.environ.get('DB_HOST', 'localhost')
-    DB_PORT = os.environ.get('DB_PORT', '5432')
-    DB_NAME = os.environ.get('DB_NAME', 'authdb')
-    DB_USER = os.environ.get('DB_USER', 'postgres')
-    DB_PASSWORD = os.environ.get('DB_PASSWORD', 'password')
-    
-    SQLALCHEMY_DATABASE_URI = f'postgresql://{DB_USER}:{DB_PASSWORD}@{DB_HOST}:{DB_PORT}/{DB_NAME}'
+    # SQLite настройки
+    SQLALCHEMY_DATABASE_URI = os.environ.get('DATABASE_URL', 'sqlite:///app.db')
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     
     # JWT настройки
@@ -24,4 +18,16 @@ class Config:
     JWT_TOKEN_LOCATION = ['headers']
     
     # CORS настройки
-    CORS_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000']
+    CORS_ORIGINS = ['http://localhost:3000', 'http://127.0.0.1:3000', 'http://frontend:3000']
+
+class ProductionConfig(Config):
+    DEBUG = False
+    TESTING = False
+
+class DevelopmentConfig(Config):
+    DEBUG = True
+    DEVELOPMENT = True
+
+class TestingConfig(Config):
+    TESTING = True
+    SQLALCHEMY_DATABASE_URI = 'sqlite:///:memory:'
