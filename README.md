@@ -20,7 +20,28 @@
 {
   "success": true,
   "message": "Login successful",
-  "data": {
+  "data"
+Соль генерируется автоматически
+
+Проверка сложности паролей при регистрации
+
+🔍 Security CI/CD Pipeline Автоматическое сканирование безопасности
+
+При каждом push и pull request автоматически запускаются: SAST (Static Application Security Testing)
+
+Bandit - статический анализ Python кода
+
+Safety - проверка уязвимостей в зависимостях
+
+Pylint - анализ качества кода
+
+SCA (Software Composition Analysis)
+
+pip-audit - аудит зависимостей Python
+
+OWASP Dependency Check - комплексная проверка компонентов
+
+Container Security: {
     "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
     "token_type": "bearer",
     "user": {
@@ -220,3 +241,5 @@ Security Testing
 
   ## Отчеты безопасности
   <img width="971" height="306" alt="image" src="https://github.com/user-attachments/assets/89515f23-84bb-4438-a6c9-87356625fd61" />
+  <img width="774" height="573" alt="image" src="https://github.com/user-attachments/assets/a167286b-6d6d-4fdc-9a1f-67f12ae197d7" />
+
