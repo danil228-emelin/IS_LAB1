@@ -93,12 +93,11 @@ Authorization: Bearer <your_jwt_token>
   }
 }
 ```
-POST /api/posts
+POST /api/posts (требуют JWT токен) 
 
 Создание нового поста.
 
 Заголовки:
-text
 
 Authorization: Bearer <your_jwt_token>
 Content-Type: application/json
@@ -110,7 +109,7 @@ Content-Type: application/json
   "title": "Заголовок поста",
   "content": "Содержимое поста"
 }
-
+```
 
 
 При первом запуске автоматически создаются тестовые пользователи:
