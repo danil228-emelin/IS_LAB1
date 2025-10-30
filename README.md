@@ -20,45 +20,12 @@
 {
   "success": true,
   "message": "Login successful",
-  "data"
-Соль генерируется автоматически
-
-Проверка сложности паролей при регистрации
-
-🔍 Security CI/CD Pipeline Автоматическое сканирование безопасности
-
-При каждом push и pull request автоматически запускаются: SAST (Static Application Security Testing)
-
-Bandit - статический анализ Python кода
-
-Safety - проверка уязвимостей в зависимостях
-
-Pylint - анализ качества кода
-
-SCA (Software Composition Analysis)
-
-pip-audit - аудит зависимостей Python
-
-OWASP Dependency Check - комплексная проверка компонентов
-
-Container Security: {
-    "access_token": "eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9...",
-    "token_type": "bearer",
-    "user": {
-      "id": "uuid",
-      "username": "admin",
-      "email": "admin@example.com",
-      "created_at": "2024-01-01T00:00:00",
-      "is_active": true
-    }
-  }
-}
 ```
 
 
 ### Получение статистики системы, списка пользователей и последних постов.
 Защищенные Endpoints (требуют JWT токен)<br>
-GET /api/dat
+GET /api/data
 
 Заголовки:
 text<br>Flask Auth API with Security CI/CD
