@@ -2,21 +2,16 @@ name: Security SAST/SCA Scan
 
 on:
   push:
-    branches: [main, develop, feature/*]
+    branches: [main, develop]
   pull_request:
     branches: [main]
-  schedule:
-    - cron: '0 0 * * 0'  # Weekly scan
 
 jobs:
-  sast-sca-scan:
+  security-scan:
     name: SAST & SCA Security Scan
     runs-on: ubuntu-latest
     
     steps:
-    - name: Create reports directory
-      run: mkdir -p reports
-      
     - name: Checkout code
       uses: actions/checkout@v4
       
@@ -28,23 +23,20 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
-        pip install -r requirements.txt
         pip install bandit safety flask pytest
         
-    # SAST - Bandit
-    - name: SAST - Run Bandit Static Analysis
+    # SAST - Bandit Static Analysis
+    - name: SAST - Run Bandit
       run: |
         echo "🔍 Running Bandit SAST Scan..."
-        bandit -r . -f html -o reports/bandit-report.html
-        bandit -r . -f txt -o reports/bandit-report.txt
+        bandit -r . --format screen
         echo "✅ Bandit scan completed"
         
-    # SCA - Safety
-    - name: SCA - Run Safety Vulnerability Check
+    # SCA - Safety Dependency Check
+    - name: SCA - Run Safety
       run: |
         echo "🔍 Running Safety Dependency Scan..."
-        safety check --full-report > reports/safety-report.txt
-        safety check --json > reports/safety-report.json
+        safety check
         echo "✅ Safety scan completed"
         
     # SCA - OWASP Dependency Check
