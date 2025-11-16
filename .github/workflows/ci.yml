@@ -48,3 +48,23 @@ jobs:
         echo "📊 SAST SCAN SUMMARY"
         echo "===================="
         echo "bandit-report.json"
+ # SCA - OWASP Dependency Check
+    - name: SCA - Download OWASP Dependency Check
+      run: |
+        echo "📥 Downloading OWASP Dependency Check..."
+        wget -q -O dependency-check.zip https://github.com/jeremylong/DependencyCheck/releases/latest/download/dependency-check-9.0.7-release.zip
+        unzip -q dependency-check.zip
+        echo "✅ OWASP Dependency Check installed"
+        
+    - name: SCA - Run OWASP Dependency Check
+      run: |
+        echo "🔍 Running OWASP Dependency Check..."
+        ./dependency-check/bin/dependency-check.sh \
+          --project "my-python-app" \
+          --scan "." \
+          --format "JSON" \
+          --out "reports" \
+          --enableRetired \
+          --failOnCVSS 8
+        cp reports/dependency-check-report.json owasp-dependency-report.json
+        echo "✅ OWASP Dependency Check completed"
