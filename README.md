@@ -207,6 +207,10 @@ Security Testing
     Интеграционные тесты - проверка механизмов защиты
 
   ## Отчеты безопасности
-  <img width="971" height="306" alt="image" src="https://github.com/user-attachments/assets/89515f23-84bb-4438-a6c9-87356625fd61" />
-  <img width="774" height="573" alt="image" src="https://github.com/user-attachments/assets/a167286b-6d6d-4fdc-9a1f-67f12ae197d7" />
+ ### bandit
+ <img width="516" height="960" alt="image" src="https://github.com/user-attachments/assets/192a9d82-ebfb-4a9c-a663-8c3dce44978e" /> <br>
+### OWASP
+<img width="1911" height="215" alt="image" src="https://github.com/user-attachments/assets/f42cc911-4b2c-4e72-9d26-2bd31cdb3f92" />
+
+
 
