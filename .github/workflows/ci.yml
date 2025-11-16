@@ -1,4 +1,4 @@
-name: Security SAST/SCA Scan
+name: Security SAST Scan
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   security-scan:
-    name: SAST & SCA Security Scan
+    name: SAST Security Scan
     runs-on: ubuntu-latest
     
     steps:
@@ -24,28 +24,12 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-        pip install bandit safety
+        pip install bandit
         
     # SAST - Bandit Static Analysis
-    - name: SAST - Run Bandit
+    - name: SAST - Run Bandit Security Scan
       run: |
-        echo "🔍 Running Bandit SAST Scan..."
+        echo "🔍 Running Bandit SAST Security Scan..."
         bandit -r . --format screen --skip B603,B607
-        echo "✅ Bandit scan completed"
-      continue-on-error: true
+        echo "✅ Bandit SAST scan completed"
         
-    # SCA - Safety Dependency Check
-    - name: SCA - Run Safety
-      run: |
-        echo "🔍 Running Safety Dependency Scan..."
-        safety check
-        echo "✅ Safety scan completed"
-      continue-on-error: true
-        
-    - name: Show Scan Summary
-      run: |
-        echo "📊 SECURITY SCAN SUMMARY"
-        echo "========================"
-        echo "✅ SAST (Bandit): Completed"
-        echo "✅ SCA (Safety): Completed"
-        echo "🔒 Security checks finished!"
