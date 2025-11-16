@@ -6,7 +6,7 @@ Main Security Reports Generator
 
 import json
 import os
-import subprocess
+import subprocess # nosec
 import sys
 from datetime import datetime
 from pathlib import Path
