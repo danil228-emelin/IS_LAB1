@@ -1,4 +1,4 @@
-name: Security SAST Scan with Reports
+name: Security SAST & SCA Scan
 
 on:
   push:
@@ -8,7 +8,7 @@ on:
 
 jobs:
   security-scan:
-    name: SAST SCAN
+    name: SAST & SCA Security Scan
     runs-on: ubuntu-latest
     
     steps:
@@ -23,48 +23,52 @@ jobs:
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
+        pip install -r requirements.txt
         pip install bandit
         
-    - name: Run Bandit with Reports
+    # SAST - Bandit Static Analysis
+    - name: SAST - Run Bandit with Reports
       run: |        
-        # Основной отчет в JSON
+        echo "🔍 Running Bandit SAST Scan..."
         bandit -r . \
           --format json \
           --output bandit-report.json \
           --skip B603,B607
+        echo "✅ Bandit SAST report generated!"
+    
+    # SCA - OWASP Dependency Check
+    - name: SCA - Setup OWASP Dependency Check
+      uses: dependency-check/Dependency-Check_Action@main
+      with:
+        project: 'my-python-project'
+        path: '.'
+        format: 'JSON'
+        out: 'reports'
+        args: >-
+          --enableRetired
+          --failOnCVSS 8
+          --scan .
         
-        echo "✅ Bandit reports generated!"
+    - name: SCA - Process OWASP Report
+      run: |
+        echo "📦 Processing OWASP Dependency Check report..."
+        # Копируем отчет в корень для удобства
+        cp reports/dependency-check-report.json owasp-dependency-report.json
+        echo "✅ OWASP Dependency Check report generated!"
         
     - name: Upload Security Reports
       uses: actions/upload-artifact@v4
       with:
-        name: bandit-security-reports
+        name: security-reports
         path: |
           bandit-report.json
+          owasp-dependency-report.json
         retention-days: 30
         
     - name: Show Scan Summary
       run: |
-        echo "📊 SAST SCAN SUMMARY"
-        echo "===================="
-        echo "bandit-report.json"
- # SCA - OWASP Dependency Check
-    - name: SCA - Download OWASP Dependency Check
-      run: |
-        echo "📥 Downloading OWASP Dependency Check..."
-        wget -q -O dependency-check.zip https://github.com/jeremylong/DependencyCheck/releases/latest/download/dependency-check-9.0.7-release.zip
-        unzip -q dependency-check.zip
-        echo "✅ OWASP Dependency Check installed"
-        
-    - name: SCA - Run OWASP Dependency Check
-      run: |
-        echo "🔍 Running OWASP Dependency Check..."
-        ./dependency-check/bin/dependency-check.sh \
-          --project "my-python-app" \
-          --scan "." \
-          --format "JSON" \
-          --out "reports" \
-          --enableRetired \
-          --failOnCVSS 8
-        cp reports/dependency-check-report.json owasp-dependency-report.json
-        echo "✅ OWASP Dependency Check completed"
+        echo "SECURITY SCAN SUMMARY"
+        echo "========================"
+        echo "SAST (Bandit): bandit-report.json"
+        echo "SCA (OWASP): owasp-dependency-report.json"
+        echo "Both security reports generated!"
